@@ -1,6 +1,9 @@
 """
 Project functions file.
 """
+import math
+
+Q_VAL = 3329
 
 
 def _bits_to_bytes(bit_array: list[int]) -> list[bytes]:
@@ -97,12 +100,36 @@ def _byte_decode(bytes_array: list[bytes], d: int) -> list[int]:
     return int_array
 
 
-def _compress():
-    pass
+def _compress(int_array: list[int], d: int) -> list[int]:
+
+    compressed = []
+
+    modifier = 2**d / Q_VAL
+
+    for value in int_array:
+        temp = modifier*value
+        temp = math.ceil(
+            temp) if temp % 1 == 0.5 else round(temp)
+
+        compressed.append(temp % (2**d))
+
+    return compressed
 
 
-def _decompress():
-    pass
+def _decompress(int_array: list[int], d: int) -> list[int]:
+
+    decompressed = []
+
+    modifier = Q_VAL/(2**d)
+
+    for value in int_array:
+        new_value = modifier*value
+        new_value = math.ceil(
+            new_value) if new_value % 1 == 0.5 else round(new_value)
+
+        decompressed.append(new_value)
+
+    return decompressed
 
 
 def _sample_ntt():
