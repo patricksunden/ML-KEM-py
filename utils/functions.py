@@ -43,12 +43,58 @@ def _bytes_to_bits(byte_array: list[bytes]) -> list[int]:
     return bit_array
 
 
-def _byte_encode():
-    pass
+def _byte_encode(int_array: list[int], d: int) -> list[bytes]:
+
+    if len(int_array) != 256:
+        raise ValueError(
+            f"Provided array contained {len(int_array)} integers. Required length is 256")
+
+    if not all(isinstance(x, int) for x in int_array):
+        raise ValueError("int_array values must be integers")
+
+    if (not d or not isinstance(d, int) or d > 12 or d < 1):
+        raise ValueError(
+            "Parameter d has to be integer between 1 and 12")
+
+    m = 2**d if d < 12 else 3329    # The q param == 3329
+
+    # check that provided int_array values are modulo of m
+    if any(x >= m for x in int_array):
+        raise ValueError(
+            f"int_array contains an element exceeding the max value {m-1} for current d value {d}")
+
+    bit_array = [0]*(len(int_array)*d)
+
+    for i, val in enumerate(int_array):
+        a = val
+        for j in range(d):
+            bit_array[i*d+j] = a % 2
+            a = (a-bit_array[i*d+j]) // 2
+
+    return _bits_to_bytes(bit_array)
 
 
-def _byte_decode():
-    pass
+def _byte_decode(bytes_array: list[bytes], d: int) -> list[int]:
+
+    if not all(isinstance(x, bytes) for x in bytes_array):
+        raise ValueError("bytes_array values must be bytes")
+
+    if (not d or not isinstance(d, int) or d > 12 or d < 1):
+        raise ValueError(
+            "Parameter d has to be integer between 1 and 12")
+
+    bit_array = _bytes_to_bits(bytes_array)
+
+   # chunk into arrays of d bits
+    chunked = [bit_array[i:i+d] for i in range(0, len(bit_array), d)]
+    int_array = []
+    for joo in chunked:
+        curr = 0
+        for i, val in enumerate(joo):
+            curr += val*(2**i)
+        int_array.append(curr)
+
+    return int_array
 
 
 def _compress():
