@@ -2,6 +2,7 @@
 Project functions file.
 """
 import math
+from Crypto.Hash import SHAKE128
 
 Q_VAL = 3329
 
@@ -132,5 +133,26 @@ def _decompress(int_array: list[int], d: int) -> list[int]:
     return decompressed
 
 
-def _sample_ntt():
-    pass
+def _sample_ntt(b):
+
+    # Verify that the seed is exactly 32 bytes
+    if len(b) != 32:
+        raise ValueError("The seed must be exactly 32 bytes!")
+    
+    # input parameter b is a 32-byte seed
+    ctx = SHAKE128.new()
+    ctx = ctx.update(b)
+    j = 0
+    a = []
+    while j < 256:
+        c = ctx.read(3)
+        d1 = c[0] + 256 * (c[1] % 16)
+        d2 = (c[1] // 16) + 16 * c[2]
+        if d1 < Q_VAL:
+            a.append(d1)
+            j+=1
+        if d2 < Q_VAL and j < 256:
+            a.append(d2)
+            j+=1
+        
+    return a
