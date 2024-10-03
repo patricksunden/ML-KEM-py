@@ -137,7 +137,7 @@ def _sample_ntt(b):
 
     # Verify that the seed is exactly 32 bytes
     if len(b) != 32:
-        raise ValueError("The seed must be exactly 32 bytes!")
+        raise ValueError("Received an improper length, the seed must be exactly 32 bytes.")
     
     # input parameter b is a 32-byte seed
     ctx = SHAKE128.new()
