@@ -218,7 +218,7 @@ class TestSamplePolyCBD(unittest.TestCase):
 
         byte_array = []
         for byte in test_bytes:
-            byte_array.append(int.to_bytes(byte))
+            byte_array.append(int.to_bytes(byte, 1, "little"))
         sample_poly_output = _sample_poly_cbd(byte_array, 2)
 
         self.assertEqual(len(sample_poly_output), target_len,
