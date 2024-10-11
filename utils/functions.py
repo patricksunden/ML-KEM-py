@@ -184,7 +184,7 @@ def _prf(eta, s, b):
 
     output = SHAKE256.new((s + b))
     output = output.read(64*eta)
-    return output
+    return [x.to_bytes(1, "little") for x in output]
 
 
 def _sample_ntt(b):
