@@ -2,6 +2,7 @@
 Project functions file.
 """
 import math
+import hashlib
 from Crypto.Hash import SHAKE128, SHAKE256
 
 Q_VAL = 3329
@@ -171,19 +172,20 @@ def _decompress(int_array: list[int], d: int) -> list[int]:
 
 def _prf(eta, s, b):
 
-    if type(s) is not bytes or type(b) is not bytes:
+    if not isinstance(s, bytes) or not isinstance(b, bytes):
         raise TypeError("Both inputs of prf need to be bytes")
 
-    if type(eta) is not int:
+    if not isinstance(eta, int):
         raise TypeError("Eta needs to be of value int")
-    
-    if len(s) != 1 or len(b) != 32:
-        raise ValueError("The length of s needs to be 1 and the length of b needs to be 32")
 
+    if len(s) != 1 or len(b) != 32:
+        raise ValueError(
+            "The length of s needs to be 1 and the length of b needs to be 32")
 
     output = SHAKE256.new((s + b))
     output = output.read(64*eta)
     return output
+
 
 def _sample_ntt(b):
 
@@ -212,12 +214,15 @@ def _sample_ntt(b):
 
 # Computes NTT representation 𝑓 of the given polynomial 𝑓 ∈ 𝑅𝑞.
 # The input of ntt is a set of 256 coefficients (array)
+
+
 def _ntt(f):
 
     if len(f) != 256:
         raise ValueError(
             "Received an improper length, the seed must be exactly 256.")
-    if not type(f) is list:
+
+    if not isinstance(f, list):
         raise TypeError("The input needs to be a list.")
 
     i = 1
@@ -236,14 +241,18 @@ def _ntt(f):
         length //= 2
     return f
 
-# Computes ̂the polynomial 𝑓 ∈ 𝑅𝑞 that corresponds to the given NTT representation 𝑓 ∈ 𝑇𝑞.
-# input (f) is an array
+
 def _inverse_ntt(f):
+    """
+    Computes ̂the polynomial 𝑓 ∈ 𝑅𝑞 that corresponds to the given NTT representation 𝑓 ∈ 𝑇𝑞.
+    input (f) is an array
+    """
 
     if len(f) != 256:
         raise ValueError(
             "Received an improper length, the array length must be exactly 256.")
-    if not type(f) is list:
+
+    if not isinstance(f, list):
         raise TypeError("The input needs to be a list.")
 
     length = 2
@@ -262,24 +271,29 @@ def _inverse_ntt(f):
         entry = (entry * 3303) % Q_VAL
     return f
 
-# input is two arrays f, g
 
-# "Computes the product (in the ring 𝑇𝑞) of two NTT representations."
 def _multiply_ntt(f, g):
+    """
+    input is two arrays f, g
+    Computes the product (in the ring 𝑇𝑞) of two NTT representations.
 
-    if not type(f) is list or not type(g) is list:
+    """
+
+    if not isinstance(f, list) or not isinstance(g, list):
         raise TypeError("The input needs to be a list.")
+
     if len(f) != 256 or len(g) != 256:
-        raise ValueError("The length of the input arrays need to be exactly 256.")
-    
-    
+        raise ValueError(
+            "The length of the input arrays need to be exactly 256.")
+
     # Have to initialize the list first
     h = [0] * 256
 
     for i in range(0, 128):
-        tuple = _base_case_multiply(f[2*i], f[2*i+1], g[2*i], g[2*i+1], BITREV7_NTT_MODQ_2[i])
-        h[2*i] += tuple[0]
-        h[2*i+1] = tuple[1]
+        my_tuple = _base_case_multiply(
+            f[2*i], f[2*i+1], g[2*i], g[2*i+1], BITREV7_NTT_MODQ_2[i])
+        h[2*i] += my_tuple[0]
+        h[2*i+1] = my_tuple[1]
 
         # output is an array, h
         # the output consists of the coefficients of the product of the inputs
@@ -296,10 +310,11 @@ def _base_case_multiply(a0, a1, b0, b1, gamma):
     c1 = ((a0 * b1) + (a1 * b0)) % Q_VAL
     return (c0, c1)
 
+
 def _sample_poly_cbd(b, eta):
 
     bits = _bytes_to_bits(b)
-    f = [0] * 256 # initialize the array to the size of the fixed output
+    f = [0] * 256  # initialize the array to the size of the fixed output
 
     for i in range(0, 256):
         for j in range(0, eta - 1):
@@ -308,3 +323,33 @@ def _sample_poly_cbd(b, eta):
             y = bits[2*i*eta + eta + j]
         f[i] = (x - y) % Q_VAL
     return f
+
+
+def _j(s: bytes) -> bytes:
+    """
+    Function J: J(s) = SHAKE256(s, 8 * 32)
+    """
+    shake256 = hashlib.shake_256()
+    shake256.update(s)
+    return shake256.digest(32)  # Output 32 bytes
+
+
+def _h(s: bytes) -> bytes:
+    """
+    Function H: H(s) = SHA3-256(s)
+    """
+    sha3_256 = hashlib.sha3_256()
+    sha3_256.update(s)
+    return sha3_256.digest()  # 32 bytes
+
+
+def _g(c: bytes) -> tuple[bytes, bytes]:
+    """
+    Function G: G(c) = SHA3-512(c), then split into two 32-byte outputs (a, b)
+    """
+    sha3_512 = hashlib.sha3_512()
+    sha3_512.update(c)
+    digest = sha3_512.digest()  # 64 bytes total
+    a = digest[:32]  # First 32 bytes
+    b = digest[32:]  # Last 32 bytes
+    return a, b
