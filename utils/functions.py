@@ -2,7 +2,7 @@
 Project functions file.
 """
 import math
-from Crypto.Hash import SHAKE128
+from Crypto.Hash import SHAKE128, SHAKE256
 
 Q_VAL = 3329
 
@@ -169,6 +169,22 @@ def _decompress(int_array: list[int], d: int) -> list[int]:
     return decompressed
 
 
+def _prf(eta, s, b):
+
+    if type(s) is not bytes or type(b) is not bytes:
+        raise TypeError("Both inputs of prf need to be bytes")
+
+    if type(eta) is not int:
+        raise TypeError("Eta needs to be of value int")
+    
+    if len(s) != 1 or len(b) != 32:
+        raise ValueError("The length of s needs to be 1 and the length of b needs to be 32")
+
+
+    output = SHAKE256.new((s + b))
+    output = output.read(64*eta)
+    return output
+
 def _sample_ntt(b):
 
     # Verify that the seed is exactly 32 bytes
@@ -196,9 +212,7 @@ def _sample_ntt(b):
 
 # Computes NTT representation 𝑓 of the given polynomial 𝑓 ∈ 𝑅𝑞.
 # The input of ntt is a set of 256 coefficients (array)
-
-
-def ntt(f):
+def _ntt(f):
 
     if len(f) != 256:
         raise ValueError(
@@ -224,9 +238,7 @@ def ntt(f):
 
 # Computes ̂the polynomial 𝑓 ∈ 𝑅𝑞 that corresponds to the given NTT representation 𝑓 ∈ 𝑇𝑞.
 # input (f) is an array
-
-
-def inverse_ntt(f):
+def _inverse_ntt(f):
 
     if len(f) != 256:
         raise ValueError(
@@ -253,22 +265,19 @@ def inverse_ntt(f):
 # input is two arrays f, g
 
 # "Computes the product (in the ring 𝑇𝑞) of two NTT representations."
-
-
-def multiply_ntt(f, g):
-
-    if len(f) != 256 and len(g) != 256:
-        raise ValueError(
-            "The length of the input arrays need to be exactly 256.")
+def _multiply_ntt(f, g):
 
     if not type(f) is list or not type(g) is list:
         raise TypeError("The input needs to be a list.")
+    if len(f) != 256 or len(g) != 256:
+        raise ValueError("The length of the input arrays need to be exactly 256.")
+    
+    
     # Have to initialize the list first
     h = [0] * 256
 
     for i in range(0, 128):
-        tuple = base_case_multiply(
-            f[2*i], f[2*i+1], g[2*i], g[2*i+1], BITREV7_NTT_MODQ_2[i])
+        tuple = _base_case_multiply(f[2*i], f[2*i+1], g[2*i], g[2*i+1], BITREV7_NTT_MODQ_2[i])
         h[2*i] += tuple[0]
         h[2*i+1] = tuple[1]
 
@@ -278,7 +287,7 @@ def multiply_ntt(f, g):
 
 
 # "Computes the product of two degree-one polynomials with respect to a quadratic modulus"
-def base_case_multiply(a0, a1, b0, b1, gamma):
+def _base_case_multiply(a0, a1, b0, b1, gamma):
 
     if not (type(a0) or type(a1) or type(b0) or type(b1) or type(gamma)) is int:
         raise TypeError("The inputs need to be of type int")
@@ -286,3 +295,16 @@ def base_case_multiply(a0, a1, b0, b1, gamma):
     c0 = ((a0 * b0) + (a1 * b1 * gamma)) % Q_VAL
     c1 = ((a0 * b1) + (a1 * b0)) % Q_VAL
     return (c0, c1)
+
+def _sample_poly_cbd(b, eta):
+
+    bits = _bytes_to_bits(b)
+    f = [0] * 256 # initialize the array to the size of the fixed output
+
+    for i in range(0, 256):
+        for j in range(0, eta - 1):
+            x = bits[2*i*eta + j]
+        for j in range(0, eta - 1):
+            y = bits[2*i*eta + eta + j]
+        f[i] = (x - y) % Q_VAL
+    return f
