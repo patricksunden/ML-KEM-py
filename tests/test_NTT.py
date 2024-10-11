@@ -6,7 +6,7 @@ Test file.
 
 import unittest
 from secrets import token_bytes
-from utils.functions import _sample_ntt, ntt, inverse_ntt, multiply_ntt, base_case_multiply
+from utils.functions import _sample_ntt, _ntt, _inverse_ntt, _multiply_ntt, _base_case_multiply, _prf, _sample_poly_cbd
 
 class Test_ntt_functions(unittest.TestCase):
 
@@ -51,7 +51,7 @@ class Test_ntt_functions(unittest.TestCase):
         input_array = [0] * 256
         output_length = 256
 
-        output_length1 = len(ntt(input_array))
+        output_length1 = len(_ntt(input_array))
 
         self.assertEqual(output_length, output_length1, "The output length should be 256")
 
@@ -60,7 +60,7 @@ class Test_ntt_functions(unittest.TestCase):
         f = (1,) * 256
 
         with self.assertRaises(TypeError) as error:
-            ntt(f)
+            _ntt(f)
         
         self.assertEqual(
             "The input needs to be a list.", str(error.exception))
@@ -79,7 +79,7 @@ class Test_ntt_functions(unittest.TestCase):
         f = [1] * 256
         output_length = 256
 
-        output_length1 = len(inverse_ntt(f))
+        output_length1 = len(_inverse_ntt(f))
 
         self.assertEqual(output_length, output_length1, "Received an improper length, the array length must be exactly 256.")
 
@@ -88,7 +88,7 @@ class Test_ntt_functions(unittest.TestCase):
         f = (1,) * 256
 
         with self.assertRaises(TypeError) as error:
-            inverse_ntt(f)
+            _inverse_ntt(f)
         
         self.assertEqual(
             "The input needs to be a list.", str(error.exception))
@@ -105,7 +105,7 @@ class Test_ntt_functions(unittest.TestCase):
         g = [2] * 256
 
         expected_length = 256
-        h = multiply_ntt(f, g)
+        h = _multiply_ntt(f, g)
         self.assertEqual(len(h), expected_length)
 
     def test_multiply_ntt_zero(self):
@@ -114,16 +114,16 @@ class Test_ntt_functions(unittest.TestCase):
         f = [0] * 256
         g = [2] * 256
 
-        h = multiply_ntt(f, g)
+        h = _multiply_ntt(f, g)
         self.assertEqual(h, expected_output)
 
-    def test_multiply_ntt_input(self):
+    def test_multiply_ntt_input_len(self):
 
-        f = [0] * 255
+        f = [0] * 250
         g = [2] * 256
 
         with self.assertRaises(ValueError) as error:
-            multiply_ntt(f, g)
+            _multiply_ntt(f, g)
         
         self.assertEqual(
             "The length of the input arrays need to be exactly 256.", str(error.exception))
@@ -134,7 +134,7 @@ class Test_ntt_functions(unittest.TestCase):
         g = [2] * 256
 
         with self.assertRaises(TypeError) as error:
-            multiply_ntt(f, g)
+            _multiply_ntt(f, g)
         
         self.assertEqual(
             "The input needs to be a list.", str(error.exception))
@@ -148,8 +148,8 @@ class Test_ntt_functions(unittest.TestCase):
     def test_base_case_multiply(self):
 
         # Test basic stuff with known outputs
-        self.assertEqual(base_case_multiply(1, 2, 3, 4, 5), (43, 10))
-        self.assertEqual(base_case_multiply(0, 0, 0, 0, 0), (0, 0))
+        self.assertEqual(_base_case_multiply(1, 2, 3, 4, 5), (43, 10))
+        self.assertEqual(_base_case_multiply(0, 0, 0, 0, 0), (0, 0))
 
     def test_base_case_int_input(self):
 
@@ -160,7 +160,119 @@ class Test_ntt_functions(unittest.TestCase):
         gamma = 4
 
         with self.assertRaises(TypeError) as error:
-            base_case_multiply(a0, a1, b0, b1, gamma)
+            _base_case_multiply(a0, a1, b0, b1, gamma)
 
         self.assertEqual(
         "The inputs need to be of type int", str(error.exception))
+
+###############################
+##   sample_poly_cbd tests   ##
+###############################
+    
+    def test_sample_poly_cbd_outputlen(self):
+
+        target_len = 256
+
+        onebyte = token_bytes(1)
+        morebytes = token_bytes(32)
+        test_bytes = _prf(2, onebyte, morebytes)
+
+        byte_array = []
+        for byte in test_bytes: 
+            byte_array.append(int.to_bytes(byte))
+        sample_poly_output = _sample_poly_cbd(byte_array, 2)
+
+        self.assertEqual(len(sample_poly_output), target_len, "The output must be of length 256!")
+
+###############################
+##         prf tests         ##
+###############################
+
+    
+    def test_prf_eta_input_type(self):
+        """
+        Testing type of parameter eta, if different than int, raise error.
+        """
+
+        eta = "g"
+        s = token_bytes(1)
+        b = token_bytes(32)
+
+
+        with self.assertRaises(TypeError) as error:
+          _prf(eta, s, b)
+
+        self.assertEqual(
+            "Eta needs to be of value int", str(error.exception))
+
+    def test_prf_s_input_type(self):
+        """
+        testing type of parameter s, if different than bytes, raise error.
+        """
+
+        eta = 2
+        s = 5
+        b = token_bytes(32)
+
+        with self.assertRaises(TypeError) as error:
+            _prf(eta, s, b)
+
+        self.assertEqual(
+            "Both inputs of prf need to be bytes", str(error.exception))
+        
+    def test_prf_b_input_type(self):
+        """
+        Testing type of parameter b, if different than bytes, return error.
+        """
+        eta = 2
+        s = token_bytes(1)
+        b = 'j'
+
+        with self.assertRaises(TypeError) as error:
+            _prf(eta, s, b)
+
+        self.assertEqual(
+            "Both inputs of prf need to be bytes", str(error.exception))
+
+    def test_prf_s_input_length(self):
+        """
+        Testing input length of s parameter, should raise error if length is different than 1
+        """
+
+        eta = 2
+        s = token_bytes(2)
+        b = token_bytes(32)
+
+        with self.assertRaises(ValueError) as error:
+            _prf(eta, s, b)  
+
+        self.assertEqual(
+            "The length of s needs to be 1 and the length of b needs to be 32", str(error.exception))
+        
+    def test_prf_b_input_length(self):
+        """
+        Testing the b parameter with incorrect length, should raise error if different than 32.
+        """
+
+        eta = 2
+        s = token_bytes(1)
+        b = token_bytes(2)
+
+        with self.assertRaises(ValueError) as error:
+            _prf(eta, s, b)  
+
+        self.assertEqual(
+            "The length of s needs to be 1 and the length of b needs to be 32", str(error.exception))
+        
+    """
+    def test_prf_output_len(self):
+                
+        target
+        eta = 2
+        s = token_bytes(1)
+        b = token_bytes(32)
+
+        output = prf(eta, s, b)
+
+        self.assertEqual()
+        """
