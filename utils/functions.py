@@ -22,7 +22,7 @@ BITREV7_NTT_MODQ = [
     1584,   2298,   2037,   3220,   375,    2549,   2090,   1645,
     1063,   319,    2773,   757,    2099,   561,    2466,   2594,
     2804,   1092,   403,    1026,   1143,   2150,   2775,   886,
-    1722,   1212,   1874,   1029,   2110,   2935,   885,    2154 ]
+    1722,   1212,   1874,   1029,   2110,   2935,   885,    2154]
 
 BITREV7_NTT_MODQ_2 = [
     17,     -17,    2761,   -2761,  583,    -583,   2649,   -2649,
@@ -40,7 +40,8 @@ BITREV7_NTT_MODQ_2 = [
     2804,   -2804,  1092,   -1092,  403,    -403,   1026,   -1026,
     1143,   -1143,  2150,   -2150,  2775,   -2775,  886,    -886,
     1722,   -1722,  1212,   -1212,  1874,   -1874,  1029,   -1029,
-    2110,   -2110,  2935,   -2935,  885,    -885,   2154,   -2154 ]
+    2110,   -2110,  2935,   -2935,  885,    -885,   2154,   -2154]
+
 
 def _bits_to_bytes(bit_array: list[int]) -> list[bytes]:
 
@@ -172,8 +173,9 @@ def _sample_ntt(b):
 
     # Verify that the seed is exactly 32 bytes
     if len(b) != 32:
-        raise ValueError("Received an improper length, the seed must be exactly 32 bytes.")
-    
+        raise ValueError(
+            "Received an improper length, the seed must be exactly 32 bytes.")
+
     # input parameter b is a 32-byte seed
     ctx = SHAKE128.new()
     ctx = ctx.update(b)
@@ -185,22 +187,25 @@ def _sample_ntt(b):
         d2 = (c[1] // 16) + 16 * c[2]
         if d1 < Q_VAL:
             a.append(d1)
-            j+=1
+            j += 1
         if d2 < Q_VAL and j < 256:
             a.append(d2)
-            j+=1
-        
+            j += 1
+
     return a
 
 # Computes NTT representation 𝑓 of the given polynomial 𝑓 ∈ 𝑅𝑞.
 # The input of ntt is a set of 256 coefficients (array)
+
+
 def ntt(f):
 
     if len(f) != 256:
-        raise ValueError("Received an improper length, the seed must be exactly 256.")
+        raise ValueError(
+            "Received an improper length, the seed must be exactly 256.")
     if not type(f) is list:
         raise TypeError("The input needs to be a list.")
-    
+
     i = 1
     length = 128
     start = 0
@@ -219,13 +224,16 @@ def ntt(f):
 
 # Computes ̂the polynomial 𝑓 ∈ 𝑅𝑞 that corresponds to the given NTT representation 𝑓 ∈ 𝑇𝑞.
 # input (f) is an array
+
+
 def inverse_ntt(f):
 
     if len(f) != 256:
-        raise ValueError("Received an improper length, the array length must be exactly 256.")
+        raise ValueError(
+            "Received an improper length, the array length must be exactly 256.")
     if not type(f) is list:
         raise TypeError("The input needs to be a list.")
-    
+
     length = 2
     i = 127
     start = 0
@@ -245,20 +253,24 @@ def inverse_ntt(f):
 # input is two arrays f, g
 
 # "Computes the product (in the ring 𝑇𝑞) of two NTT representations."
+
+
 def multiply_ntt(f, g):
 
     if len(f) != 256 and len(g) != 256:
-        raise ValueError("The length of the input arrays need to be exactly 256.")
-    
+        raise ValueError(
+            "The length of the input arrays need to be exactly 256.")
+
     if not type(f) is list or not type(g) is list:
         raise TypeError("The input needs to be a list.")
     # Have to initialize the list first
     h = [0] * 256
 
     for i in range(0, 128):
-        tuple = base_case_multiply(f[2*i], f[2*i+1], g[2*i], g[2*i+1], BITREV7_NTT_MODQ_2[i])
+        tuple = base_case_multiply(
+            f[2*i], f[2*i+1], g[2*i], g[2*i+1], BITREV7_NTT_MODQ_2[i])
         h[2*i] += tuple[0]
-        h[2*i+1] = tuple [1]
+        h[2*i+1] = tuple[1]
 
         # output is an array, h
         # the output consists of the coefficients of the product of the inputs
@@ -268,7 +280,7 @@ def multiply_ntt(f, g):
 # "Computes the product of two degree-one polynomials with respect to a quadratic modulus"
 def base_case_multiply(a0, a1, b0, b1, gamma):
 
-    if not(type(a0) or type(a1) or type(b0) or type(b1) or type(gamma)) is int:
+    if not (type(a0) or type(a1) or type(b0) or type(b1) or type(gamma)) is int:
         raise TypeError("The inputs need to be of type int")
 
     c0 = ((a0 * b0) + (a1 * b1 * gamma)) % Q_VAL
