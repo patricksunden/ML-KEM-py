@@ -19,9 +19,9 @@ class TestNttFunctions(unittest.TestCase):
     ######################
     """
 
-    def sample_ntt_improper_length(self):
+    def test_sample_ntt_improper_length(self):
         """
-        Should raise ValueError if the length of the input is less than 32 bytes
+        Should raise ValueError if the length of the input is less than 34 bytes
         """
 
         improper_byte_length = token_bytes(31)
@@ -29,14 +29,14 @@ class TestNttFunctions(unittest.TestCase):
             _sample_ntt(improper_byte_length)
 
         self.assertEqual(
-            "Received an improper length, the seed must be exactly 32 bytes.", str(error.exception))
+            "Received an improper length, the seed must be exactly 34 bytes.", str(error.exception))
 
-    def sample_ntt_output_length(self):
+    def test_sample_ntt_output_length(self):
         """
         Should fail if the output is not of length 256 (an array of 256 values)
         """
 
-        proper_byte_length = token_bytes(32)
+        proper_byte_length = token_bytes(34)
         output_length = 256
 
         output_length1 = len(_sample_ntt(proper_byte_length))
@@ -50,7 +50,7 @@ class TestNttFunctions(unittest.TestCase):
 #####################
 
 
-    def ntt_output_length(self):
+    def test_ntt_output_length(self):
         """
         Should fail if the output is not of length 256 (an array of 256 values)
         """
