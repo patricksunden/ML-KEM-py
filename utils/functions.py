@@ -3,7 +3,9 @@ Project functions file.
 """
 import math
 import hashlib
+from secrets import token_bytes
 from Crypto.Hash import SHAKE128, SHAKE256
+import numpy as np
 
 Q_VAL = 3329
 
@@ -187,14 +189,14 @@ def _prf(eta, s, b):
     return [x.to_bytes(1, "little") for x in output]
 
 
-def _sample_ntt(b):
+def _sample_ntt(b: bytes):
 
-    # Verify that the seed is exactly 32 bytes
-    if len(b) != 32:
+    # Verify that the seed is exactly 34 bytes (seed + j idx + i idx)
+    if len(b) != 34:
         raise ValueError(
-            "Received an improper length, the seed must be exactly 32 bytes.")
+            "Received an improper length, the seed must be exactly 34 bytes.")
 
-    # input parameter b is a 32-byte seed
+    # input parameter b is a 34-byte seed
     ctx = SHAKE128.new()
     ctx = ctx.update(b)
     j = 0
@@ -229,7 +231,6 @@ def _ntt(f):
     length = 128
     start = 0
 
-    print(length)
     while length >= 2:
         for start in range(0, 256, length * 2):
             zeta = BITREV7_NTT_MODQ[i]
@@ -353,3 +354,98 @@ def _g(c: bytes) -> tuple[bytes, bytes]:
     a = digest[:32]  # First 32 bytes
     b = digest[32:]  # Last 32 bytes
     return a, b
+
+
+def _encode_lists(data: list[list[int]], d: int) -> bytes:
+    """
+    Helper to encode and join multiple lists to bytes
+    """
+    mod = 2**d if d < 12 else Q_VAL
+
+    cleaned = [[int(i) % mod for i in arr]
+               for arr in data]  # remove numpy int types
+    byte_lists = [_byte_encode(arr, d) for arr in cleaned]
+
+    return b"".join([b for arr in byte_lists for b in arr])
+
+
+def _k_pke_key_gen(random_bytes: bytes, k: int) -> tuple[bytes, bytes]:  # pylint: disable=too-many-locals
+    """
+    Key generator.
+
+    Args:
+        random_bytes (bytes): random bytes.
+        k (int): Parameter set k-value
+
+    Returns:
+        encryption_key, decryption_key (bytes,bytes)
+    """
+    if not len(random_bytes) == 32:
+        raise ValueError("KeyGen requires 32 random bytes")
+
+    added_random_bytes = random_bytes + k.to_bytes(1, "little")
+
+    seed1, seed2 = _g(added_random_bytes)
+
+    n_val = 0
+
+    matrix_a = [[0]*k]*k
+    for i in range(k):
+        for j in range(k):
+            matrix_a[i][j] = _sample_ntt(
+                seed1+j.to_bytes(1, "little")+i.to_bytes(1, "little"))
+
+    s_samples = [0]*k
+    for i in range(k):
+        s_samples[i] = _sample_poly_cbd(
+            _prf(k, n_val.to_bytes(1, "little"), seed2),
+            k
+        )
+        n_val += 1
+
+    e_samples = [0]*k
+    for i in range(k):
+        e_samples[i] = _sample_poly_cbd(
+            _prf(k, n_val.to_bytes(1, "little"), seed2),
+            k
+        )
+        n_val += 1
+
+    s_hat = [_ntt(s) for s in s_samples]
+    e_hat = [_ntt(e) for e in e_samples]
+
+    t_hat = np.einsum("ijk,ik->ik", matrix_a, s_hat) + e_hat
+
+    # Notice! Using constant d value 12 here because of the docs stating it so.
+    # Might be an error. Check first if issues arise
+    encryption_key = _encode_lists(t_hat, 12) + seed1
+    decryption_key = _encode_lists(s_hat, 12)
+
+    return encryption_key, decryption_key
+
+
+def _ml_kem_gey_gen_internal(d_random: bytes, z_random: bytes, k: int):
+    """
+    KeyGen internal.
+    """
+
+    ek_pke, dk_pke = _k_pke_key_gen(d_random, k)
+
+    dk = dk_pke+ek_pke+_h(ek_pke)+z_random
+
+    return ek_pke, dk
+
+
+def ml_kem_gey_gen(k: int):
+    """
+    KeyGen.
+    """
+    # TODO: check fips compliance for secrets.token_bytes for rbg
+    # and change it for better if it is not appropriate
+    d_random = token_bytes(32)
+    z_random = token_bytes(32)
+
+    if not d_random or not z_random or len(d_random) != 32 or len(z_random) != 32:
+        raise ValueError("Random byte generation failed")
+
+    return _ml_kem_gey_gen_internal(d_random, z_random, k)
