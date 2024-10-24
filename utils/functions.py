@@ -369,7 +369,7 @@ def _encode_lists(data: list[list[int]], d: int) -> bytes:
     return b"".join([b for arr in byte_lists for b in arr])
 
 
-def _k_pke_key_gen(random_bytes: bytes, k: int) -> tuple[bytes, bytes]:  # pylint: disable=too-many-locals
+def _k_pke_key_gen(random_bytes: bytes, k: int, n1: int) -> tuple[bytes, bytes]:  # pylint: disable=too-many-locals
     """
     Key generator.
 
@@ -398,16 +398,16 @@ def _k_pke_key_gen(random_bytes: bytes, k: int) -> tuple[bytes, bytes]:  # pylin
     s_samples = [0]*k
     for i in range(k):
         s_samples[i] = _sample_poly_cbd(
-            _prf(k, n_val.to_bytes(1, "little"), seed2),
-            k
+            _prf(n1, n_val.to_bytes(1, "little"), seed2),
+            n1
         )
         n_val += 1
 
     e_samples = [0]*k
     for i in range(k):
         e_samples[i] = _sample_poly_cbd(
-            _prf(k, n_val.to_bytes(1, "little"), seed2),
-            k
+            _prf(n1, n_val.to_bytes(1, "little"), seed2),
+            n1
         )
         n_val += 1
 
@@ -424,19 +424,19 @@ def _k_pke_key_gen(random_bytes: bytes, k: int) -> tuple[bytes, bytes]:  # pylin
     return encryption_key, decryption_key
 
 
-def _ml_kem_gey_gen_internal(d_random: bytes, z_random: bytes, k: int):
+def _ml_kem_gey_gen_internal(d_random: bytes, z_random: bytes, k: int, n1: int):
     """
     KeyGen internal.
     """
 
-    ek_pke, dk_pke = _k_pke_key_gen(d_random, k)
+    ek_pke, dk_pke = _k_pke_key_gen(d_random, k, n1)
 
     dk = dk_pke+ek_pke+_h(ek_pke)+z_random
 
     return ek_pke, dk
 
 
-def ml_kem_gey_gen(k: int):
+def ml_kem_gey_gen(k: int, n1: int):
     """
     KeyGen.
     """
@@ -448,4 +448,4 @@ def ml_kem_gey_gen(k: int):
     if not d_random or not z_random or len(d_random) != 32 or len(z_random) != 32:
         raise ValueError("Random byte generation failed")
 
-    return _ml_kem_gey_gen_internal(d_random, z_random, k)
+    return _ml_kem_gey_gen_internal(d_random, z_random, k, n1)

@@ -16,8 +16,9 @@ class TestKeyGen(unittest.TestCase):
         T_pke_keygen creates appropriate length and type of keys.
         """
         k = 2
+        n1 = 3
         encryption_key, decryption_key = _k_pke_key_gen(
-            "randbyts".encode()*4, k)
+            "randbyts".encode()*4, k, n1)
 
         # length = 384*k + 32
         self.assertEqual(800, len(encryption_key))
@@ -32,8 +33,9 @@ class TestKeyGen(unittest.TestCase):
         Ml kem keygen internal creates appropriate length and type of keys.
         """
         k = 2
+        n1 = 3
         ek, dk = _ml_kem_gey_gen_internal(
-            "randbyt1".encode()*4, "randbyt2".encode()*4, k)
+            "randbyt1".encode()*4, "randbyt2".encode()*4, k, n1)
 
         # length = 384*k + 32
         self.assertEqual(800, len(ek))
@@ -48,7 +50,8 @@ class TestKeyGen(unittest.TestCase):
         Ml kem keygen creates appropriate length and type of keys.
         """
         k = 2
-        ek, dk = ml_kem_gey_gen(k)
+        n1 = 3
+        ek, dk = ml_kem_gey_gen(k, n1)
 
         # length = 384*k + 32
         self.assertEqual(800, len(ek))

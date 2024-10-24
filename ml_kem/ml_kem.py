@@ -24,4 +24,4 @@ class MLKEM:
         """
         Creates the keys
         """
-        return ml_kem_gey_gen(self.pm_set.k)
+        return ml_kem_gey_gen(self.pm_set.k, self.pm_set.n1)
