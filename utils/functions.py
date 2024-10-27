@@ -119,6 +119,9 @@ def _byte_encode(int_array: list[int], d: int) -> list[bytes]:
 
 def _byte_decode(bytes_array: list[bytes], d: int) -> list[int]:
 
+    if not len(bytes_array) == 32*d:
+        raise ValueError("Wrong bytes_array length")
+
     if not all(isinstance(x, bytes) for x in bytes_array):
         raise ValueError("bytes_array values must be bytes")
 
@@ -131,9 +134,9 @@ def _byte_decode(bytes_array: list[bytes], d: int) -> list[int]:
    # chunk into arrays of d bits
     chunked = [bit_array[i:i+d] for i in range(0, len(bit_array), d)]
     int_array = []
-    for joo in chunked:
+    for el in chunked:
         curr = 0
-        for i, val in enumerate(joo):
+        for i, val in enumerate(el):
             curr += val*(2**i)
         int_array.append(curr)
 
@@ -268,8 +271,10 @@ def _inverse_ntt(f):
                 f[j] = (t + f[j + length]) % Q_VAL
                 f[j + length] = (zeta * (f[j + length] - t)) % Q_VAL
         length *= 2
-    for entry in f:
-        entry = (entry * 3303) % Q_VAL
+
+    for i in range(256):
+        f[i] = (f[i]*3303) % Q_VAL
+
     return f
 
 
@@ -416,8 +421,6 @@ def _k_pke_key_gen(random_bytes: bytes, k: int, n1: int) -> tuple[bytes, bytes]:
 
     t_hat = np.einsum("ijk,ik->ik", matrix_a, s_hat) + e_hat
 
-    # Notice! Using constant d value 12 here because of the docs stating it so.
-    # Might be an error. Check first if issues arise
     encryption_key = _encode_lists(t_hat, 12) + seed1
     decryption_key = _encode_lists(s_hat, 12)
 
@@ -449,3 +452,145 @@ def ml_kem_gey_gen(k: int, n1: int):
         raise ValueError("Random byte generation failed")
 
     return _ml_kem_gey_gen_internal(d_random, z_random, k, n1)
+
+
+def _k_pke_encrypt(encrypt_key_bytes: bytes, message: bytes, random_bytes: bytes, pm_set) -> bytes:  # pylint: disable=too-many-locals
+    """
+    Encrypt.
+    """
+    encryption_key = [b.to_bytes(1, "little") for b in encrypt_key_bytes]
+    n_val = 0
+    t_hat = []
+    for i in range(pm_set.k):
+        t_hat.append(
+            _byte_decode(encryption_key[384*i:384*(i+1)], 12)
+        )
+    seed = encrypt_key_bytes[384*pm_set.k:]
+    matrix_a = [[0]*pm_set.k]*pm_set.k
+    for i in range(pm_set.k):
+        for j in range(pm_set.k):
+            matrix_a[i][j] = _sample_ntt(
+                seed+j.to_bytes(1, "little")+i.to_bytes(1, "little"))
+
+    y_samples = [0]*pm_set.k
+    for i in range(pm_set.k):
+        y_samples[i] = _sample_poly_cbd(
+            _prf(pm_set.n1, n_val.to_bytes(1, "little"), random_bytes),
+            pm_set.n1
+        )
+        n_val += 1
+
+    e_samples = [0]*pm_set.k
+    for i in range(pm_set.k):
+        e_samples[i] = _sample_poly_cbd(
+            _prf(pm_set.n2, n_val.to_bytes(1, "little"), random_bytes),
+            pm_set.n2
+        )
+        n_val += 1
+
+    e2_sample = _sample_poly_cbd(
+        _prf(pm_set.n2, n_val.to_bytes(1, "little"), random_bytes), pm_set.n2)
+
+    y_hat = [_ntt(y) for y in y_samples]
+    u_matrix = [_inverse_ntt(list(f)) for f in np.einsum(
+        "ijk,ik->ik", matrix_a, y_hat)] + np.array(e_samples)
+
+    mu = _decompress(
+        _byte_decode([b.to_bytes(1, "little") for b in message], 1), 1)
+    v_list = _inverse_ntt(list(np.einsum("ij,ij->j", t_hat, y_hat))) + \
+        np.array(e2_sample) + np.array(mu)
+    v_list = [int(x) for x in v_list]
+
+    c1 = _encode_lists([_compress(x, pm_set.du) for x in u_matrix], pm_set.du)
+    c2 = b"".join(b for b in _byte_encode(
+        _compress(v_list, pm_set.dv), pm_set.dv))
+
+    cipher = c1+c2
+
+    return cipher
+
+
+def _k_pke_decrypt(decryption_key: bytes, cipher: bytes, pm_set) -> bytes:
+    """
+    Decrypt.
+    """
+    cipher_byte_array = [b.to_bytes(1, "little") for b in cipher]
+    c1 = cipher_byte_array[:32*pm_set.du*pm_set.k]
+    c2 = cipher_byte_array[32*pm_set.du*pm_set.k:]
+
+    chunk_size_c1 = len(c1) // pm_set.k
+    chunked_c1 = [c1[i*chunk_size_c1:(i+1)*chunk_size_c1]
+                  for i in range(pm_set.k)]
+    u_list = [_decompress(_byte_decode(x, pm_set.du), pm_set.du)
+              for x in chunked_c1]
+    v_list = _decompress(_byte_decode(c2, pm_set.dv), pm_set.dv)
+
+    decryption_key_byte_array = [b.to_bytes(
+        1, "little") for b in decryption_key]
+    s_hat = [_byte_decode(decryption_key_byte_array[i*384:(i+1)*384], 12)
+             for i in range(pm_set.k)]
+
+    u_nttd = [_ntt(x) for x in u_list]
+    dot_result = [int(x) for x in np.einsum("ij,ij->j", s_hat, u_nttd)]
+    w_list = np.array(v_list) - np.array(_inverse_ntt(dot_result))
+    w_list = [int(x) for x in w_list]
+
+    message = _byte_encode(_compress(w_list, 1), 1)
+    joined = b"".join(message)
+
+    return joined
+
+
+def _ml_kem_encaps_internal(encryption_key: bytes, randomness: bytes, pm_set):
+    """
+    Encaps internal.
+    """
+    key, rand = _g(randomness+_h(encryption_key))
+
+    cipher = _k_pke_encrypt(encryption_key, randomness, rand, pm_set)
+
+    return key, cipher
+
+
+def ml_kem_encaps(ek: bytes, pm_set):
+    """
+    Encaps.
+    """
+    random_bytes = token_bytes(32)
+
+    if not random_bytes or len(random_bytes) != 32:
+        raise ValueError("Random byte generation failed")
+
+    key, cipher = _ml_kem_encaps_internal(ek, random_bytes, pm_set)
+    return key, cipher
+
+
+def _ml_kem_decaps_internal(dk: bytes, cipher: bytes, pm_set):
+    """
+    Decaps internal.
+    """
+    dk_pke = dk[:384*pm_set.k]
+    ek_pke = dk[384*pm_set.k:(768*pm_set.k)+32]
+
+    h_val = dk[768*pm_set.k+32:(768*pm_set.k)+64]
+    z_val = dk[768*pm_set.k+64:(768*pm_set.k)+96]
+
+    message_bytes = _k_pke_decrypt(dk_pke, cipher, pm_set)
+    shared_secret_key, randomness = _g(message_bytes+h_val)
+
+    key_check = _j(z_val+cipher)
+
+    cipher_check = _k_pke_encrypt(ek_pke, message_bytes, randomness, pm_set)
+
+    if cipher != cipher_check:
+        # if ciphertexts do not match, “implicitly reject” (from FIPS 203)
+        shared_secret_key = key_check
+
+    return shared_secret_key
+
+
+def ml_kem_decaps(dk: bytes, cipher: bytes, pm_set) -> bytes:
+    """
+    Decaps.
+    """
+    return _ml_kem_decaps_internal(dk, cipher, pm_set)
