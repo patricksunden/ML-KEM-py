@@ -172,3 +172,35 @@ class TestByteEncodeDecode(unittest.TestCase):
         result = _byte_decode(_byte_encode(int_array, 12), 12)
 
         self.assertListEqual([2047, 3000, 1000, 3328]*64, result)
+
+    def test_decode_encode(self):
+        """
+        Decoding bytes and encoding them back should give the same
+        result as in the start
+        """
+        test_bytes = b"test"*96  # length has to be 32*d
+
+        result = b"".join(_byte_encode(_byte_decode(
+            [b.to_bytes(1, "little") for b in test_bytes], 12), 12))
+
+        self.assertEqual(test_bytes, result)
+
+    def test_decode_encode_384k(self):
+        """
+        Test from chapter 7.2 FIPS 203
+        """
+        k = 2
+        start_bytes = b"test"*192  # simulate ek 384k while k=2
+        test_bytes = [x.to_bytes(1, "little")
+                      for x in start_bytes]
+
+        chunked = [test_bytes[i*384:(i+1)*384] for i in range(k)]
+        decoded = [_byte_decode(arr, 12) for arr in chunked]
+        mid_result = [_byte_encode(arr, 12) for arr in decoded]
+        bytes_arr = []
+        for sublist in mid_result:
+            for el in sublist:
+                bytes_arr.append(el)
+        result = b"".join(bytes_arr)
+
+        self.assertEqual(start_bytes, result)

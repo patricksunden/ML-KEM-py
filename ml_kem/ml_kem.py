@@ -3,7 +3,7 @@ The main user facing ml-kem tool file.
 """
 
 from utils.parameters import P512, P768, P1024
-from utils.functions import ml_kem_gey_gen
+from utils.functions import ml_kem_gey_gen, ml_kem_encaps, ml_kem_decaps
 
 
 class MLKEM:
@@ -24,4 +24,19 @@ class MLKEM:
         """
         Creates the keys
         """
-        return ml_kem_gey_gen(self.pm_set.k, self.pm_set.n1)
+        ek, dk = ml_kem_gey_gen(self.pm_set.k, self.pm_set.n1)
+        return ek, dk
+
+    def encaps(self, ek: bytes):
+        """
+        Creates the shared secret key and cipher
+        """
+        key, cipher = ml_kem_encaps(ek, self.pm_set)
+        return key, cipher
+
+    def decaps(self, dk: bytes, cipher: bytes):
+        """
+        Creates the shared secret key out of cipher
+        """
+        key = ml_kem_decaps(dk, cipher, self.pm_set)
+        return key
