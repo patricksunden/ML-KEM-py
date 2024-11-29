@@ -3,7 +3,7 @@ Keygen test cases.
 """
 
 import unittest
-from utils.functions import _k_pke_key_gen, _ml_kem_gey_gen_internal, ml_kem_gey_gen
+from quantumcrypto.utils.functions import _k_pke_key_gen, _ml_kem_gey_gen_internal, ml_kem_gey_gen
 
 
 class TestKeyGen(unittest.TestCase):

@@ -3,7 +3,7 @@ Test file.
 """
 
 import unittest
-from utils.functions import _bits_to_bytes, _bytes_to_bits
+from quantumcrypto.utils.functions import _bits_to_bytes, _bytes_to_bits
 
 
 class TestInnerFunctions(unittest.TestCase):

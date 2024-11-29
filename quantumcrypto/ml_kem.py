@@ -2,8 +2,8 @@
 The main user facing ml-kem tool file.
 """
 
-from utils.parameters import P512, P768, P1024
-from utils.functions import ml_kem_gey_gen, ml_kem_encaps, ml_kem_decaps
+from quantumcrypto.utils.parameters import P512, P768, P1024
+from quantumcrypto.utils.functions import ml_kem_gey_gen, ml_kem_encaps, ml_kem_decaps
 
 
 class MLKEM:
