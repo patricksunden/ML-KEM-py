@@ -51,7 +51,7 @@ jobs:
       - name: Extract tag
         run: |
           GIT_TAG=${{ steps.tag_version.outputs.new_tag }}
-          echo "The new git tag: $GIT_TAG"
+          echo "Git tag check: $GIT_TAG"
 
 
       # - name: Build the package
