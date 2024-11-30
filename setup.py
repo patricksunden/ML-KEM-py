@@ -13,13 +13,13 @@ def read_file(filename: str):
         return f.read()
 
 
-# version = os.environ.get("GIT_TAG").lstrip("v")
-# if not version:
-#     raise ValueError("The GIT_TAG environment variable is not set.")
+version = os.environ.get("GIT_TAG").lstrip("v")
+if not version:
+    raise ValueError("The GIT_TAG environment variable is not set.")
 
 setup(
     name="quantumcrypto",
-    version="0.0.0",
+    version=version,
     description="A cryptography library.",
     packages=find_packages(),
     install_requires=read_file("requirements.txt").splitlines(),
