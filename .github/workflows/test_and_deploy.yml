@@ -1,13 +1,9 @@
 name: Run Python Unit Tests and Deploy to PyPI
 
 on:
-  push:
+  pull_request:
     branches:
-      - pypi
-
-  # pull_request:
-  #   branches:
-  #     - main
+      - main
 
 jobs:
   test:
