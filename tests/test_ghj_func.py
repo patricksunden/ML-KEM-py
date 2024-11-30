@@ -3,7 +3,7 @@ Tests for G, H and J functions.
 """
 
 import unittest
-from utils.functions import _g, _h, _j
+from quantumcrypto.utils.functions import _g, _h, _j
 
 
 class TestGHJTestCase(unittest.TestCase):

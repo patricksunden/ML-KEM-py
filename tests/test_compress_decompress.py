@@ -3,7 +3,7 @@ Test file.
 """
 
 import unittest
-from utils.functions import _compress, _decompress
+from quantumcrypto.utils.functions import _compress, _decompress
 
 
 class TestCompressDecompress(unittest.TestCase):

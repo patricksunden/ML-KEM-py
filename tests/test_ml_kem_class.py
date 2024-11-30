@@ -3,7 +3,7 @@ ML kem class test cases.
 """
 
 import unittest
-from ml_kem.ml_kem import MLKEM
+from quantumcrypto import MLKEM
 
 
 class TestMLKemTestCase(unittest.TestCase):

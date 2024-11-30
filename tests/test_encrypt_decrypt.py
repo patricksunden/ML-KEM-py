@@ -3,10 +3,10 @@ Encrypt decrypt test cases.
 """
 
 import unittest
-from utils.functions import (
+from quantumcrypto.utils.functions import (
     _k_pke_encrypt,
     _k_pke_decrypt)
-from ml_kem.ml_kem import MLKEM
+from quantumcrypto.ml_kem import MLKEM
 
 
 class TestEncryptDecrypt(unittest.TestCase):

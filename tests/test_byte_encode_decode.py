@@ -3,7 +3,7 @@ Test file.
 """
 
 import unittest
-from utils.functions import _byte_encode, _byte_decode
+from quantumcrypto.utils.functions import _byte_encode, _byte_decode
 
 
 class TestByteEncodeDecode(unittest.TestCase):
