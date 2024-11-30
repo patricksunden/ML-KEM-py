@@ -4,7 +4,7 @@ Test file.
 
 import unittest
 from secrets import token_bytes
-from utils.functions import (
+from quantumcrypto.utils.functions import (
     _sample_ntt, _ntt,
     _inverse_ntt,
     _multiply_ntt,
