@@ -28,21 +28,31 @@ jobs:
       - name: Run tests
         run: python -m unittest discover tests
 
-  deploy:
-    needs: test
+  check_skip_tag:
     runs-on: ubuntu-22.04
-
+    outputs:
+      should_skip: ${{ steps.skipcheck.outputs.should_skip }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      
+    
       - name: Check if deploy is skipped
+        id: skipcheck
         run: |
           if git log -1 --pretty=%B | grep -q '#skipdeploy'; then
-            echo "Commit message contains #skipdeploy. Exiting."
-            exit 1
+            echo "should_skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_skip=false" >> $GITHUB_OUTPUT
           fi
         shell: bash
+
+  deploy:
+    needs: [test, check_skip_tag]
+    runs-on: ubuntu-22.04
+    if: needs.check_skip_tag.outputs.should_skip == 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
