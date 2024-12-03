@@ -19,8 +19,9 @@ class TestMLKemTestCase(unittest.TestCase):
 
         ek, dk = ml_kem.generate_keys()
 
-        self.assertEqual(800, len(ek))
-        self.assertEqual(1632, len(dk))
+        # Hex length is twice the byte length
+        self.assertEqual(1600, len(ek))  # 800 * 2
+        self.assertEqual(3264, len(dk))  # 1632 * 2
 
     def test_pm768_key_generation(self):
         """
@@ -30,8 +31,9 @@ class TestMLKemTestCase(unittest.TestCase):
 
         ek, dk = ml_kem.generate_keys()
 
-        self.assertEqual(1184, len(ek))
-        self.assertEqual(2400, len(dk))
+        # Hex length is twice the byte length
+        self.assertEqual(2368, len(ek))  # 1184 * 2
+        self.assertEqual(4800, len(dk))  # 2400 * 2
 
     def test_pm1024_key_generation(self):
         """
@@ -41,8 +43,9 @@ class TestMLKemTestCase(unittest.TestCase):
 
         ek, dk = ml_kem.generate_keys()
 
-        self.assertEqual(1568, len(ek))
-        self.assertEqual(3168, len(dk))
+        # Hex length is twice the byte length
+        self.assertEqual(3136, len(ek))  # 1568 * 2
+        self.assertEqual(6336, len(dk))  # 3168 * 2
 
     def test_encapsulate_decapsulate512(self):
         """
@@ -57,6 +60,7 @@ class TestMLKemTestCase(unittest.TestCase):
 
         user_a_key = user_a.decaps(dk, cipher)
 
+        self.assertEqual(64, len(user_a_key))
         self.assertEqual(user_a_key, user_b_key)
 
     def test_encapsulate_decapsulate768(self):
@@ -72,6 +76,7 @@ class TestMLKemTestCase(unittest.TestCase):
 
         user_a_key = user_a.decaps(dk, cipher)
 
+        self.assertEqual(64, len(user_a_key))
         self.assertEqual(user_a_key, user_b_key)
 
     def test_encapsulate_decapsulate1024(self):
@@ -87,6 +92,7 @@ class TestMLKemTestCase(unittest.TestCase):
 
         user_a_key = user_a.decaps(dk, cipher)
 
+        self.assertEqual(64, len(user_a_key))
         self.assertEqual(user_a_key, user_b_key)
 
     def test_incorrect_process512(self):
