@@ -20,23 +20,27 @@ class MLKEM:
         else:
             self.pm_set = P1024
 
-    def generate_keys(self):
+    def generate_keys(self) -> tuple[str, str]:
         """
-        Creates the keys
+        Creates the encapsulation and decapsulation keys.
         """
         ek, dk = ml_kem_gey_gen(self.pm_set.k, self.pm_set.n1)
-        return ek, dk
+        return ek.hex(), dk.hex()
 
-    def encaps(self, ek: bytes):
+    def encaps(self, ek: str) -> tuple[str, str]:
         """
         Creates the shared secret key and cipher
         """
-        key, cipher = ml_kem_encaps(ek, self.pm_set)
-        return key, cipher
+        ek_bytes = bytes.fromhex(ek)
+        key, cipher = ml_kem_encaps(ek_bytes, self.pm_set)
+        return key.hex(), cipher.hex()
 
-    def decaps(self, dk: bytes, cipher: bytes):
+    def decaps(self, dk: str, cipher: str) -> str:
         """
         Creates the shared secret key out of cipher
         """
-        key = ml_kem_decaps(dk, cipher, self.pm_set)
-        return key
+        dk_bytes = bytes.fromhex(dk)
+        cipher_bytes = bytes.fromhex(cipher)
+
+        key = ml_kem_decaps(dk_bytes, cipher_bytes, self.pm_set)
+        return key.hex()
