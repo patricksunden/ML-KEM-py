@@ -23,12 +23,14 @@ class TestEncryptDecrypt(unittest.TestCase):
         fake_random = b"fake"*8
 
         ek, dk = ml_kem.generate_keys()
-        dk_pke = dk[:384*pm.k]
+        ek_bytes = bytes.fromhex(ek)
+        dk_bytes = bytes.fromhex(dk)
+        dk_pke = dk_bytes[:384*pm.k]
 
         plain_msg = "testtesttesttesttesttesttesttest"
 
         cipher = _k_pke_encrypt(
-            ek,
+            ek_bytes,
             bytes(plain_msg, encoding="utf-8"),
             fake_random,
             ml_kem.pm_set
@@ -48,12 +50,14 @@ class TestEncryptDecrypt(unittest.TestCase):
         fake_random = b"fake"*8
 
         ek, dk = ml_kem.generate_keys()
-        dk_pke = dk[:384*pm.k]
+        ek_bytes = bytes.fromhex(ek)
+        dk_bytes = bytes.fromhex(dk)
+        dk_pke = dk_bytes[:384*pm.k]
 
         plain_msg = "testtesttesttesttesttesttesttest"
 
         cipher = _k_pke_encrypt(
-            ek,
+            ek_bytes,
             bytes(plain_msg, encoding="utf-8"),
             fake_random,
             ml_kem.pm_set
@@ -73,12 +77,14 @@ class TestEncryptDecrypt(unittest.TestCase):
         fake_random = b"fake"*8
 
         ek, dk = ml_kem.generate_keys()
-        dk_pke = dk[:384*pm.k]
+        ek_bytes = bytes.fromhex(ek)
+        dk_bytes = bytes.fromhex(dk)
+        dk_pke = dk_bytes[:384*pm.k]
 
         plain_msg = "testtesttesttesttesttesttesttest"
 
         cipher = _k_pke_encrypt(
-            ek,
+            ek_bytes,
             bytes(plain_msg, encoding="utf-8"),
             fake_random,
             ml_kem.pm_set
