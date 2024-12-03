@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+  push:
+    branches:
+      - main
+
 jobs:
   test:
     runs-on: ubuntu-22.04
@@ -25,6 +29,7 @@ jobs:
         run: python -m unittest discover tests
 
   check_skip_tag:
+    if: github.event_name == 'push'
     runs-on: ubuntu-22.04
     outputs:
       should_skip: ${{ steps.skipcheck.outputs.should_skip }}
@@ -43,9 +48,9 @@ jobs:
         shell: bash
 
   deploy:
+    if: github.event_name == 'push' && needs.check_skip_tag.outputs.should_skip == 'false'
     needs: [test, check_skip_tag]
     runs-on: ubuntu-22.04
-    if: needs.check_skip_tag.outputs.should_skip == 'false'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
