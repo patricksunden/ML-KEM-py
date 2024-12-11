@@ -11,6 +11,7 @@ on:
 
 jobs:
   test:
+    timeout-minutes: 5
     runs-on: ubuntu-22.04
 
     steps:
@@ -33,6 +34,7 @@ jobs:
 
   check_skip_tag:
     if: github.event_name == 'push'
+    timeout-minutes: 5
     runs-on: ubuntu-22.04
     outputs:
       should_skip: ${{ steps.skipcheck.outputs.should_skip }}
@@ -53,6 +55,7 @@ jobs:
   deploy:
     if: github.event_name == 'push' && needs.check_skip_tag.outputs.should_skip == 'false'
     needs: [test, check_skip_tag]
+    timeout-minutes: 5
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
