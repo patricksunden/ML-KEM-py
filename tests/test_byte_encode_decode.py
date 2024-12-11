@@ -121,6 +121,45 @@ class TestByteEncodeDecode(unittest.TestCase):
         partial = result[:8]
         self.assertListEqual([1, 2, 3, 4, 1, 2, 3, 4], partial)
 
+    def test_decode_wrong_length(self):
+        """
+        Test _byte_decode wrong length.
+        """
+
+        byte_array = [b'\x01', b'\x02', b'\x03', b'\x04']*5
+        with self.assertRaises(ValueError) as error:
+            _byte_decode(byte_array, 8)
+
+        self.assertEqual(
+            "Wrong bytes_array length",
+            str(error.exception))
+
+    def test_decode_improper_values(self):
+        """
+        Test _byte_decode improper values.
+        """
+
+        byte_array = [b'\x01', b'\x02', b'\x03', 5]*64
+        with self.assertRaises(ValueError) as error:
+            _byte_decode(byte_array, 8)
+
+        self.assertEqual(
+            "bytes_array values must be bytes",
+            str(error.exception))
+
+    def test_decode_improper_d_value(self):
+        """
+        Test _byte_decode improper d value.
+        """
+
+        byte_array = [b'\x01', b'\x02', b'\x03', b'\x04']*104
+        with self.assertRaises(ValueError) as error:
+            _byte_decode(byte_array, 13)
+
+        self.assertEqual(
+            "Parameter d has to be integer between 1 and 12",
+            str(error.exception))
+
     def test_encode_12_bit(self):
         """
         Test _byte_encode for 12 bits.

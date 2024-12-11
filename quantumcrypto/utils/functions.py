@@ -2,9 +2,8 @@
 Project functions file.
 """
 import math
-import hashlib
 from secrets import token_bytes
-from Crypto.Hash import SHAKE128, SHAKE256
+from Crypto.Hash import SHAKE128, SHAKE256, SHA3_256, SHA3_512
 import numpy as np
 
 Q_VAL = 3329
@@ -335,16 +334,16 @@ def _j(s: bytes) -> bytes:
     """
     Function J: J(s) = SHAKE256(s, 8 * 32)
     """
-    shake256 = hashlib.shake_256()
+    shake256 = SHAKE256.new()
     shake256.update(s)
-    return shake256.digest(32)  # Output 32 bytes
+    return shake256.read(32)  # Output 32 bytes
 
 
 def _h(s: bytes) -> bytes:
     """
     Function H: H(s) = SHA3-256(s)
     """
-    sha3_256 = hashlib.sha3_256()
+    sha3_256 = SHA3_256.new()
     sha3_256.update(s)
     return sha3_256.digest()  # 32 bytes
 
@@ -353,7 +352,7 @@ def _g(c: bytes) -> tuple[bytes, bytes]:
     """
     Function G: G(c) = SHA3-512(c), then split into two 32-byte outputs (a, b)
     """
-    sha3_512 = hashlib.sha3_512()
+    sha3_512 = SHA3_512.new()
     sha3_512.update(c)
     digest = sha3_512.digest()  # 64 bytes total
     a = digest[:32]  # First 32 bytes
@@ -443,8 +442,7 @@ def ml_kem_gey_gen(k: int, n1: int):
     """
     KeyGen.
     """
-    # TODO: check fips compliance for secrets.token_bytes for rbg
-    # and change it for better if it is not appropriate
+
     d_random = token_bytes(32)
     z_random = token_bytes(32)
 

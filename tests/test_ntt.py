@@ -76,6 +76,19 @@ class TestNttFunctions(unittest.TestCase):
         self.assertEqual(
             "The input needs to be a list.", str(error.exception))
 
+    def test_ntt_false_input_length(self):
+        """
+        Test false input length.
+        """
+
+        f = (1,) * 258
+
+        with self.assertRaises(ValueError) as error:
+            _ntt(f)
+
+        self.assertEqual(
+            "Received an improper length, the seed must be exactly 256.", str(error.exception))
+
 
 #######################
 ## inverse ntt tests ##
@@ -94,6 +107,19 @@ class TestNttFunctions(unittest.TestCase):
 
         self.assertEqual(output_length, output_length1,
                          "Received an improper length, the array length must be exactly 256.")
+
+    def test_ntt_inverse_improper_output_length(self):
+        """
+        Should fail if the output is not of length 256 (an array of 256 values)
+        """
+
+        f = [1] * 255
+        with self.assertRaises(ValueError) as error:
+            _inverse_ntt(f)
+
+        self.assertEqual(
+            "Received an improper length, the array length must be exactly 256.",
+            str(error.exception))
 
     def test_inverse_ntt_false_input_type(self):
         """
